@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CNS Chat — Multi-Party Application</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════
+     LOGIN SCREEN
+════════════════════════════════════════════════════════ -->
+<div id="login-screen" class="screen active">
+  <div class="login-bg">
+    <div class="grid-lines"></div>
+    <div class="floating-packets" id="floatingPackets"></div>
+  </div>
+  <div class="login-card">
+    <div class="login-header">
+      <div class="logo-icon">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect x="2" y="8" width="28" height="16" rx="3" stroke="#00ff88" stroke-width="1.5"/>
+          <circle cx="8" cy="16" r="2" fill="#00ff88"/>
+          <circle cx="16" cy="16" r="2" fill="#00ff88" opacity="0.6"/>
+          <circle cx="24" cy="16" r="2" fill="#00ff88" opacity="0.3"/>
+          <line x1="10" y1="16" x2="14" y2="16" stroke="#00ff88" stroke-width="1" opacity="0.6"/>
+          <line x1="18" y1="16" x2="22" y2="16" stroke="#00ff88" stroke-width="1" opacity="0.3"/>
+        </svg>
+      </div>
+      <div>
+        <h1>CNS Chat</h1>
+        <p class="subtitle">Multi-Party Chat Application</p>
+      </div>
+    </div>
+    <div class="uni-badge">SPPU — IT 2019 Course | CNS Project</div>
+
+    <div class="tab-switcher">
+      <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+      <button class="tab-btn" onclick="switchTab('register')">Register</button>
+    </div>
+
+    <div id="login-form">
+      <div class="field-group">
+        <label>Username</label>
+        <input type="text" id="loginUser" placeholder="e.g. alice" autocomplete="off"/>
+      </div>
+      <div class="field-group">
+        <label>Password</label>
+        <input type="password" id="loginPass" placeholder="password"/>
+      </div>
+      <div class="demo-hint">
+        Demo: <span onclick="fillDemo('alice','alice123')">alice</span> /
+        <span onclick="fillDemo('bob','bob123')">bob</span> /
+        <span onclick="fillDemo('charlie','charlie123')">charlie</span>
+      </div>
+      <button class="btn-primary" onclick="doLogin()">
+        <span>Connect via TCP</span>
+        <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 1l7 7-7 7M1 8h14" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div id="register-form" style="display:none">
+      <div class="field-group">
+        <label>Choose Username</label>
+        <input type="text" id="regUser" placeholder="your username" autocomplete="off"/>
+      </div>
+      <div class="field-group">
+        <label>Password</label>
+        <input type="password" id="regPass" placeholder="min 6 characters"/>
+      </div>
+      <button class="btn-primary" onclick="doRegister()">Create Account</button>
+    </div>
+
+    <div id="login-status" class="status-msg"></div>
+
+    <!-- CNS Concepts Panel -->
+    <div class="concepts-strip">
+      <span class="concept-tag">TCP Socket</span>
+      <span class="concept-tag">Caesar Cipher</span>
+      <span class="concept-tag">RSA Keys</span>
+      <span class="concept-tag">MD5 Auth</span>
+      <span class="concept-tag">P2P Messaging</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     MAIN CHAT SCREEN
+════════════════════════════════════════════════════════ -->
+<div id="chat-screen" class="screen">
+  <!-- Left Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="user-avatar" id="myAvatar">A</div>
+      <div class="user-info">
+        <span id="myUsername" class="user-name">Alice</span>
+        <span class="user-status"><span class="dot online"></span>Connected</span>
+      </div>
+      <button class="icon-btn" onclick="logout()" title="Disconnect">
+        <svg width="16" height="16" viewBox="0 0 16 16"><path d="M10 2h4v12h-4M6 5l-4 3 4 3M2 8h8" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <!-- Rooms -->
+    <div class="sidebar-section">
+      <p class="section-label">Rooms</p>
+      <div id="roomList">
+        <button class="room-btn active" onclick="joinRoom('general')" data-room="general">
+          <span class="room-icon">#</span> general
+          <span class="room-count" id="count-general">0</span>
+        </button>
+        <button class="room-btn" onclick="joinRoom('tech')" data-room="tech">
+          <span class="room-icon">#</span> tech
+          <span class="room-count" id="count-tech">0</span>
+        </button>
+        <button class="room-btn" onclick="joinRoom('random')" data-room="random">
+          <span class="room-icon">#</span> random
+          <span class="room-count" id="count-random">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Online Users -->
+    <div class="sidebar-section">
+      <p class="section-label">Online Users <span id="userCount" class="count-badge">0</span></p>
+      <div id="userList" class="user-list"></div>
+    </div>
+
+    <!-- CNS Info Panel -->
+    <div class="cns-panel">
+      <p class="section-label">CNS Layer Info</p>
+      <div class="info-row"><span>Protocol</span><span class="val">TCP/IP</span></div>
+      <div class="info-row"><span>Port</span><span class="val" id="infoPort">9999</span></div>
+      <div class="info-row"><span>Cipher</span><span class="val">Caesar-3</span></div>
+      <div class="info-row"><span>Auth</span><span class="val">MD5 Hash</span></div>
+      <div class="info-row"><span>Session ID</span><span class="val" id="infoSession">—</span></div>
+      <div class="info-row"><span>RSA-e</span><span class="val" id="infoRsaE">—</span></div>
+    </div>
+  </aside>
+
+  <!-- Main Chat Area -->
+  <main class="chat-main">
+    <!-- Top Bar -->
+    <div class="chat-topbar">
+      <div class="room-title">
+        <span class="hash">#</span>
+        <span id="currentRoom">general</span>
+        <span class="room-desc">Application Layer Chat Room</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" onclick="togglePacketLog()" title="Protocol Packet Log">
+          <svg width="16" height="16" viewBox="0 0 16 16"><rect x="1" y="1" width="14" height="4" rx="1" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="1" y="6" width="14" height="4" rx="1" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="1" y="11" width="14" height="4" rx="1" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+        </button>
+        <button class="icon-btn" onclick="toggleCipherPanel()" title="Cipher Demo">
+          <svg width="16" height="16" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="8" cy="10.5" r="1" fill="currentColor"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages-area" id="messagesArea"></div>
+
+    <!-- Cipher Toggle Banner -->
+    <div id="cipherBanner" class="cipher-banner">
+      <svg width="14" height="14" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+      Caesar Cipher (Shift-3) active — messages are encrypted before sending
+      <button onclick="toggleEncryption()">Disable</button>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+      <div class="input-controls">
+        <button class="ctrl-btn" id="encryptBtn" onclick="toggleEncryption()" title="Toggle Caesar Cipher">
+          <svg width="14" height="14" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="8" cy="10.5" r="1" fill="currentColor"/></svg>
+        </button>
+      </div>
+      <input type="text" id="msgInput" class="msg-input" placeholder="Message #general..." 
+             onkeydown="if(event.key==='Enter')sendMessage()"/>
+      <button class="send-btn" onclick="sendMessage()">
+        <svg width="16" height="16" viewBox="0 0 16 16"><path d="M14 8L2 2l3 6-3 6z" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </main>
+
+  <!-- Right Panel: Packet Log / Cipher Demo -->
+  <div class="right-panel" id="rightPanel">
+    <!-- Packet Log -->
+    <div id="packetLogPanel" class="panel-section active-panel">
+      <div class="panel-header">
+        <span>Protocol Packet Log</span>
+        <span class="panel-badge">CNS Unit I</span>
+      </div>
+      <div id="packetLog" class="packet-log"></div>
+    </div>
+
+    <!-- Cipher Panel -->
+    <div id="cipherPanel" class="panel-section" style="display:none">
+      <div class="panel-header">
+        <span>Cipher Demo</span>
+        <span class="panel-badge">CNS Unit IV & V</span>
+      </div>
+      <div class="cipher-demo">
+        <div class="cipher-block">
+          <p class="cipher-label">Caesar Cipher (Substitution)</p>
+          <textarea id="cipherInput" placeholder="Type text to encrypt..." rows="3" oninput="updateCipher()"></textarea>
+          <div class="shift-control">
+            <label>Shift: <strong id="shiftVal">3</strong></label>
+            <input type="range" id="shiftSlider" min="1" max="25" value="3" oninput="updateCipher()"/>
+          </div>
+          <div class="cipher-result">
+            <div class="cr-row"><span>Plaintext:</span><span id="plainOut" class="mono">—</span></div>
+            <div class="cr-row"><span>Ciphertext:</span><span id="cipherOut" class="mono green">—</span></div>
+            <div class="cr-row"><span>Decrypted:</span><span id="decryptOut" class="mono amber">—</span></div>
+          </div>
+        </div>
+
+        <div class="cipher-block">
+          <p class="cipher-label">RSA Key Pair (Public Key Crypto)</p>
+          <div id="rsaDisplay" class="rsa-display">
+            <div class="rsa-row"><span>p (prime)</span><span id="rsaP" class="mono">—</span></div>
+            <div class="rsa-row"><span>q (prime)</span><span id="rsaQ" class="mono">—</span></div>
+            <div class="rsa-row"><span>n = p×q</span><span id="rsaN" class="mono">—</span></div>
+            <div class="rsa-row"><span>e (public)</span><span id="rsaE" class="mono green">—</span></div>
+            <div class="rsa-row"><span>d (private)</span><span id="rsaD" class="mono amber">—</span></div>
+          </div>
+        </div>
+
+        <div class="cipher-block">
+          <p class="cipher-label">MD5 Hash (Authentication)</p>
+          <input type="text" id="hashInput" placeholder="Enter password..." oninput="updateHash()"/>
+          <div class="hash-result mono green" id="hashOut">—</div>
+        </div>
+
+        <div class="cipher-block">
+          <p class="cipher-label">DNS Simulation</p>
+          <input type="text" id="dnsInput" placeholder="e.g. alice.chat.local" oninput="updateDNS()"/>
+          <div class="dns-result" id="dnsOut"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Private Message Modal -->
+  <div id="pmModal" class="modal" onclick="closePM()">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span>Private Message (P2P)</span>
+        <span class="panel-badge">Peer-to-Peer</span>
+        <button onclick="closePM()">✕</button>
+      </div>
+      <p class="modal-to">To: <strong id="pmTarget"></strong></p>
+      <textarea id="pmText" placeholder="Your private message..." rows="4"></textarea>
+      <button class="btn-primary" onclick="sendPM()">Send Privately</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
